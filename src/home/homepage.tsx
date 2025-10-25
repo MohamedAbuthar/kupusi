@@ -1,6 +1,7 @@
 "use client"
 import React, { useState } from 'react';
 import { ChevronDown, Infinity, Star, MapPin, Phone, Mail } from 'lucide-react';
+import { addReservation, type ReservationData } from '@/firebase/firestore';
 
 export default function KupusiResort() {
   const [formData, setFormData] = useState({
@@ -9,10 +10,48 @@ export default function KupusiResort() {
     phone: '',
     message: ''
   });
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
+    setIsSubmitting(true);
+    setSubmitStatus('idle');
+
+    try {
+      const reservationData: ReservationData = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        message: formData.message
+      };
+
+      const result = await addReservation(reservationData);
+      
+      if (result.success) {
+        setSubmitStatus('success');
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          message: ''
+        });
+        
+        // Reset status after 5 seconds
+        setTimeout(() => {
+          setSubmitStatus('idle');
+        }, 5000);
+      } else {
+        setSubmitStatus('error');
+        console.error('Failed to submit reservation:', result.error);
+      }
+    } catch (error) {
+      console.error('Form submission error:', error);
+      setSubmitStatus('error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -22,14 +61,44 @@ export default function KupusiResort() {
     });
   };
 
+  // Scroll functions
+  const scrollToContact = () => {
+    const contactSection = document.getElementById('contact-section');
+    if (contactSection) {
+      contactSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const scrollToProperties = () => {
+    const propertiesSection = document.getElementById('properties-section');
+    if (propertiesSection) {
+      propertiesSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const scrollToVillas = () => {
+    const villasSection = document.getElementById('villas-section');
+    if (villasSection) {
+      villasSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Section */}
       <section className="relative h-screen bg-gradient-to-br from-emerald-900 to-emerald-800 flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 opacity-20"></div>
+        {/* Background Image with Overlay */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: 'url("/prope1.jpg")',
+          }}
+        >
+          <div className="absolute inset-0 bg-emerald-900/70"></div>
+        </div>
         
         <div className="relative z-10 text-center px-4 max-w-5xl mx-auto">
-          <h1 className="text-5xl md:text-7xl font-serif text-white mb-6 tracking-tight">
+          <h1 className="text-8xl md:text-7xl font-serif text-white mb-6 tracking-tight">
             Kupusi
           </h1>
           <div className="flex items-center justify-center gap-3 mb-4 flex-wrap">
@@ -46,10 +115,16 @@ export default function KupusiResort() {
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
-            <button className="bg-amber-500 hover:bg-amber-600 text-white px-8 py-3 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 shadow-lg w-full sm:w-auto">
+            <button 
+              onClick={scrollToContact}
+              className="bg-amber-500 hover:bg-amber-600 text-white px-8 py-3 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 shadow-lg w-full sm:w-auto"
+            >
               Reserve Your Stay
             </button>
-            <button className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-emerald-900 px-8 py-3 rounded-lg font-medium transition-all duration-300 w-full sm:w-auto">
+            <button 
+              onClick={scrollToProperties}
+              className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-emerald-900 px-8 py-3 rounded-lg font-medium transition-all duration-300 w-full sm:w-auto"
+            >
               View Properties
             </button>
           </div>
@@ -68,7 +143,7 @@ export default function KupusiResort() {
       </section>
 
       {/* Sanctuary Section */}
-      <section className="py-20 px-4 bg-stone-50">
+      <section className="py-20 px-4 bg-amber-50">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
@@ -112,7 +187,7 @@ export default function KupusiResort() {
       </section>
 
       {/* Our Properties Section */}
-      <section className="py-20 px-4 bg-white">
+      <section id="properties-section" className="py-20 px-4 bg-amber-50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-serif mb-4">Our Properties</h2>
@@ -125,7 +200,12 @@ export default function KupusiResort() {
           <div className="grid md:grid-cols-2 gap-8">
             {/* Resort & Retreats */}
             <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
-              <div className="relative h-64 bg-gradient-to-br from-emerald-700 to-emerald-900 overflow-hidden">
+              <div className="relative h-64 overflow-hidden">
+                <img 
+                  src="prope1.jpg" 
+                  alt="Kupusi Resort & Retreats"
+                  className="w-full h-full object-cover"
+                />
                 <div className="absolute top-4 right-4 bg-amber-500 text-white px-4 py-2 rounded-full text-sm font-medium">
                   From $850/night
                 </div>
@@ -166,10 +246,16 @@ export default function KupusiResort() {
                 </ul>
                 
                 <div className="flex gap-4">
-                  <button className="flex-1 bg-emerald-800 hover:bg-emerald-900 text-white py-3 rounded-lg font-medium transition-colors">
+                  <button 
+                    onClick={scrollToContact}
+                    className="flex-1 bg-emerald-800 hover:bg-emerald-900 text-white py-3 rounded-lg font-medium transition-colors"
+                  >
                     Book Now
                   </button>
-                  <button className="flex-1 bg-stone-100 hover:bg-stone-200 text-emerald-900 py-3 rounded-lg font-medium transition-colors">
+                  <button 
+                    onClick={scrollToVillas}
+                    className="flex-1 bg-stone-100 hover:bg-stone-200 text-emerald-900 py-3 rounded-lg font-medium transition-colors"
+                  >
                     Learn More
                   </button>
                 </div>
@@ -178,7 +264,12 @@ export default function KupusiResort() {
 
             {/* Farmhouse */}
             <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
-              <div className="relative h-64 bg-gradient-to-br from-amber-600 to-amber-800 overflow-hidden">
+              <div className="relative h-64 overflow-hidden">
+                <img 
+                  src="prope2.jpg" 
+                  alt="Kupusi Farmhouse"
+                  className="w-full h-full object-cover"
+                />
                 <div className="absolute top-4 right-4 bg-amber-500 text-white px-4 py-2 rounded-full text-sm font-medium">
                   From $320/night
                 </div>
@@ -219,10 +310,16 @@ export default function KupusiResort() {
                 </ul>
                 
                 <div className="flex gap-4">
-                  <button className="flex-1 bg-emerald-800 hover:bg-emerald-900 text-white py-3 rounded-lg font-medium transition-colors">
+                  <button 
+                    onClick={scrollToContact}
+                    className="flex-1 bg-emerald-800 hover:bg-emerald-900 text-white py-3 rounded-lg font-medium transition-colors"
+                  >
                     Book Now
                   </button>
-                  <button className="flex-1 bg-stone-100 hover:bg-stone-200 text-emerald-900 py-3 rounded-lg font-medium transition-colors">
+                  <button 
+                    onClick={scrollToVillas}
+                    className="flex-1 bg-stone-100 hover:bg-stone-200 text-emerald-900 py-3 rounded-lg font-medium transition-colors"
+                  >
                     Learn More
                   </button>
                 </div>
@@ -233,7 +330,7 @@ export default function KupusiResort() {
       </section>
 
       {/* Luxury Villas Section */}
-      <section className="py-20 px-4 bg-stone-50">
+      <section id="villas-section" className="py-20 px-4 bg-amber-50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-serif mb-4">Luxury Villas</h2>
@@ -244,7 +341,11 @@ export default function KupusiResort() {
           </div>
 
           <div className="mb-12 rounded-2xl overflow-hidden shadow-xl">
-            <div className="h-96 bg-gradient-to-br from-emerald-600 to-emerald-900"></div>
+            <img 
+              src="luxury.jpeg" 
+              alt="Luxury Villas at Kupusi"
+              className="w-full h-96 object-cover"
+            />
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -271,7 +372,10 @@ export default function KupusiResort() {
                   <span className="text-gray-700">Outdoor Shower</span>
                 </li>
               </ul>
-              <button className="w-full bg-stone-100 hover:bg-stone-200 text-emerald-900 py-3 rounded-lg font-medium transition-colors">
+              <button 
+                onClick={scrollToContact}
+                className="w-full bg-stone-100 hover:bg-stone-200 text-emerald-900 py-3 rounded-lg font-medium transition-colors"
+              >
                 View Details
               </button>
             </div>
@@ -299,7 +403,10 @@ export default function KupusiResort() {
                   <span className="text-gray-700">Private Terrace</span>
                 </li>
               </ul>
-              <button className="w-full bg-stone-100 hover:bg-stone-200 text-emerald-900 py-3 rounded-lg font-medium transition-colors">
+              <button 
+                onClick={scrollToContact}
+                className="w-full bg-stone-100 hover:bg-stone-200 text-emerald-900 py-3 rounded-lg font-medium transition-colors"
+              >
                 View Details
               </button>
             </div>
@@ -327,7 +434,10 @@ export default function KupusiResort() {
                   <span className="text-gray-700">Meditation Deck</span>
                 </li>
               </ul>
-              <button className="w-full bg-stone-100 hover:bg-stone-200 text-emerald-900 py-3 rounded-lg font-medium transition-colors">
+              <button 
+                onClick={scrollToContact}
+                className="w-full bg-stone-100 hover:bg-stone-200 text-emerald-900 py-3 rounded-lg font-medium transition-colors"
+              >
                 View Details
               </button>
             </div>
@@ -336,10 +446,16 @@ export default function KupusiResort() {
       </section>
 
       {/* Farmhouse Living Section */}
-      <section className="py-20 px-4 bg-white">
+      <section className="py-20 px-4 bg-amber-50">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center mb-16">
-            <div className="rounded-2xl overflow-hidden shadow-xl h-96 bg-gradient-to-br from-amber-300 to-amber-600"></div>
+            <div className="rounded-2xl overflow-hidden shadow-xl h-96">
+              <img 
+                src="farmhouse.jpeg" 
+                alt="Farmhouse Living"
+                className="w-full h-full object-cover"
+              />
+            </div>
             
             <div>
               <h2 className="text-4xl md:text-5xl font-serif mb-4">Farmhouse Living</h2>
@@ -359,28 +475,28 @@ export default function KupusiResort() {
             <h3 className="text-3xl font-serif text-center mb-8">Farm Activities</h3>
             
             <div className="grid md:grid-cols-2 gap-6 mb-8">
-              <div className="bg-stone-50 p-6 rounded-lg">
+              <div className="bg-white p-6 rounded-lg">
                 <h4 className="text-xl font-serif mb-3">Morning Farm Rituals</h4>
                 <p className="text-gray-600">
                   Start your day collecting fresh eggs, feeding heritage chickens, and harvesting vegetables for breakfast.
                 </p>
               </div>
               
-              <div className="bg-stone-50 p-6 rounded-lg">
+              <div className="bg-white p-6 rounded-lg">
                 <h4 className="text-xl font-serif mb-3">Artisan Cheese Making</h4>
                 <p className="text-gray-600">
                   Learn traditional cheese-making techniques using milk from our dairy herd.
                 </p>
               </div>
               
-              <div className="bg-stone-50 p-6 rounded-lg">
+              <div className="bg-white p-6 rounded-lg">
                 <h4 className="text-xl font-serif mb-3">Organic Garden Tours</h4>
                 <p className="text-gray-600">
                   Explore our permaculture gardens and discover sustainable farming practices.
                 </p>
               </div>
               
-              <div className="bg-stone-50 p-6 rounded-lg">
+              <div className="bg-white p-6 rounded-lg">
                 <h4 className="text-xl font-serif mb-3">Sunset Hayrides</h4>
                 <p className="text-gray-600">
                   Enjoy scenic countryside views on our vintage tractor-drawn wagon.
@@ -389,7 +505,7 @@ export default function KupusiResort() {
             </div>
           </div>
 
-          <div className="bg-stone-100 rounded-2xl p-12">
+          <div className="bg-white rounded-2xl p-12">
             <h3 className="text-2xl font-serif text-center mb-8">What's Included</h3>
             
             <div className="grid md:grid-cols-3 gap-8 text-center">
@@ -416,7 +532,7 @@ export default function KupusiResort() {
       </section>
 
       {/* Signature Experiences Section */}
-      <section className="py-20 px-4 bg-stone-50">
+      <section className="py-20 px-4 bg-amber-50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-serif mb-4">Signature Experiences</h2>
@@ -428,7 +544,13 @@ export default function KupusiResort() {
 
           <div className="grid md:grid-cols-2 gap-8 mb-12">
             <div className="bg-white rounded-xl overflow-hidden shadow-lg">
-              <div className="h-64 bg-gradient-to-br from-emerald-600 to-emerald-800"></div>
+              <div className="h-64 overflow-hidden">
+                <img 
+                  src="bed.jpeg" 
+                  alt="Wellness & Restoration"
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <div className="p-8">
                 <h3 className="text-2xl font-serif mb-4">Wellness & Restoration</h3>
                 <p className="text-gray-600 mb-6">
@@ -452,7 +574,13 @@ export default function KupusiResort() {
             </div>
 
             <div className="bg-white rounded-xl overflow-hidden shadow-lg">
-              <div className="h-64 bg-gradient-to-br from-amber-600 to-amber-800"></div>
+              <div className="h-64 overflow-hidden">
+                <img 
+                  src="dinner.jpeg" 
+                  alt="Farm-to-Table Dining"
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <div className="p-8">
                 <h3 className="text-2xl font-serif mb-4">Farm-to-Table Dining</h3>
                 <p className="text-gray-600 mb-6">
@@ -501,7 +629,7 @@ export default function KupusiResort() {
       </section>
 
       {/* Contact Section */}
-      <section className="py-20 px-4 bg-gradient-to-br from-emerald-900 to-emerald-800 text-white">
+      <section id="contact-section" className="py-20 px-4 bg-gradient-to-br from-emerald-900 to-emerald-800 text-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-4xl md:text-5xl font-serif mb-4">Begin Your Journey</h2>
@@ -513,10 +641,10 @@ export default function KupusiResort() {
 
           <div className="flex flex-col sm:flex-row justify-center gap-4 mb-16">
             <button className="bg-white text-emerald-900 px-8 py-3 rounded-lg font-medium hover:bg-stone-100 transition-colors flex items-center justify-center gap-2">
-              <span>📍</span> Book on Airbnb
+               Book on Airbnb
             </button>
             <button className="bg-amber-500 hover:bg-amber-600 text-white px-8 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
-              <span>📋</span> Book on Booking.com
+               Book on Booking.com
             </button>
           </div>
 
@@ -569,6 +697,7 @@ export default function KupusiResort() {
                   value={formData.name}
                   onChange={handleChange}
                   className="w-full px-4 py-3 rounded-lg bg-emerald-800/50 border border-emerald-700 text-white placeholder-white/60 focus:outline-none focus:border-amber-500 transition-colors"
+                  required
                 />
                 
                 <input
@@ -578,6 +707,7 @@ export default function KupusiResort() {
                   value={formData.email}
                   onChange={handleChange}
                   className="w-full px-4 py-3 rounded-lg bg-emerald-800/50 border border-emerald-700 text-white placeholder-white/60 focus:outline-none focus:border-amber-500 transition-colors"
+                  required
                 />
                 
                 <input
@@ -596,13 +726,32 @@ export default function KupusiResort() {
                   onChange={handleChange}
                   rows={4}
                   className="w-full px-4 py-3 rounded-lg bg-emerald-800/50 border border-emerald-700 text-white placeholder-white/60 focus:outline-none focus:border-amber-500 transition-colors resize-none"
+                  required
                 ></textarea>
+                
+                {/* Submit Status Messages */}
+                {submitStatus === 'success' && (
+                  <div className="p-3 bg-green-500/20 border border-green-500 rounded-lg text-green-300 text-center">
+                    Thank you! Your reservation request has been sent successfully. We'll get back to you soon.
+                  </div>
+                )}
+                
+                {submitStatus === 'error' && (
+                  <div className="p-3 bg-red-500/20 border border-red-500 rounded-lg text-red-300 text-center">
+                    Sorry, there was an error sending your request. Please try again or contact us directly.
+                  </div>
+                )}
                 
                 <button
                   type="submit"
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-white py-3 rounded-lg font-medium transition-colors"
+                  disabled={isSubmitting}
+                  className={`w-full ${
+                    isSubmitting 
+                      ? 'bg-amber-600 cursor-not-allowed' 
+                      : 'bg-amber-500 hover:bg-amber-600'
+                  } text-white py-3 rounded-lg font-medium transition-colors`}
                 >
-                  Request Reservation
+                  {isSubmitting ? 'Sending...' : 'Request Reservation'}
                 </button>
               </form>
             </div>
